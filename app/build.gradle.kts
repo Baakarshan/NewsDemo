@@ -62,4 +62,5 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0") // 用来把 JSON 转成对象
     // 图片加载 Coil (专为 Compose 设计)
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 }
