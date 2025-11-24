@@ -1,6 +1,8 @@
 package com.example.newsdemo.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,7 +11,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox // 注意引用
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.newsdemo.model.NewsItem
@@ -17,28 +21,40 @@ import com.example.newsdemo.ui.components.NewsItemView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(newsList: List<NewsItem>) {
-    // Scaffold 是页面的脚手架，帮我们预留好标题栏、底部导航栏的位置
+fun HomeScreen(
+    newsList: List<NewsItem>,
+    isRefreshing: Boolean,      // 新增：是否正在刷新
+    onRefresh: () -> Unit,      // 新增：刷新的回调
+    onNewsClick: (String) -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("头条新闻") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Red, // 模仿头条红
+                    containerColor = Color.Red,
                     titleContentColor = Color.White
                 )
             )
         }
     ) { innerPadding ->
-        // LazyColumn 相当于 RecyclerView，专门处理长列表
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding) // 避免内容被标题栏挡住
-                .background(Color(0xFFF5F5F5)) // 淡淡的灰色背景
+        // PullToRefreshBox 是 Material3 的下拉刷新容器
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.padding(innerPadding)
         ) {
-            // items 函数：把 List 数据源转换成一个个 UI 组件
-            items(newsList) { news ->
-                NewsItemView(news = news)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF5F5F5))
+            ) {
+                items(newsList) { news ->
+                    NewsItemView(
+                        news = news,
+                        onClick = { onNewsClick(news.url) }
+                    )
+                }
             }
         }
     }

@@ -15,33 +15,42 @@ import androidx.lifecycle.viewmodel.compose.viewModel // 关键：获取 ViewMod
 import com.example.newsdemo.ui.HomeScreen
 import com.example.newsdemo.viewmodel.HomeViewModel
 import com.example.newsdemo.viewmodel.NewsUiState
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // 1. 获取 ViewModel 实例
-            // viewModel() 函数会自动帮你创建或者获取现有的 HomeViewModel
             val viewModel: HomeViewModel = viewModel()
-
-            // 2. 观察状态 (StateFlow -> Compose State)
-            // 只要 viewModel 里的 _uiState 变了，这里就会自动刷新
             val uiState by viewModel.uiState.collectAsState()
 
-            // 3. 根据不同的状态，画不同的界面
+            // 获取当前的 Context（用来启动浏览器）
+            val context = androidx.compose.ui.platform.LocalContext.current
+
             when (val state = uiState) {
                 is NewsUiState.Loading -> {
-                    // 状态是加载中：显示一个转圈圈
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
                 is NewsUiState.Success -> {
-                    // 状态是成功：显示昨天的 HomeScreen，并把数据传给它
-                    HomeScreen(newsList = state.news)
+                    // 1. 获取刷新状态
+                    val isRefreshing by viewModel.isRefreshing.collectAsState()
+
+                    HomeScreen(
+                        newsList = state.news,
+                        isRefreshing = isRefreshing, // 传给 UI
+                        onRefresh = {
+                            viewModel.getNews(isInit = false) // 触发 ViewModel 刷新
+                        },
+                        onNewsClick = { url ->
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                            intent.data = url.toUri()
+                            context.startActivity(intent)
+                        }
+                    )
                 }
                 is NewsUiState.Error -> {
-                    // 状态是失败：显示错误文字
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message)
                     }
