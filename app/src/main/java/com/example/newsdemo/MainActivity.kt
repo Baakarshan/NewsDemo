@@ -7,16 +7,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState // 关键：把 Flow 变成 State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel // 关键：获取 ViewModel
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.newsdemo.model.AppDatabase
 import com.example.newsdemo.ui.HomeScreen
 import com.example.newsdemo.viewmodel.HomeViewModel
 import com.example.newsdemo.viewmodel.NewsUiState
-import androidx.core.net.toUri
-import com.example.newsdemo.model.AppDatabase
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
                         CircularProgressIndicator()
                     }
                 }
+
                 is NewsUiState.Success -> {
                     // 1. 获取刷新状态
                     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -65,6 +66,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+
                 is NewsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message)
