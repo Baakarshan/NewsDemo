@@ -1,5 +1,7 @@
 package com.example.newsdemo.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -24,14 +26,19 @@ data class NewsResult(
 
 /**
  * 3. 具体的单条新闻
- * 对应 JSON 的: { "title": "...", "picUrl": "..." }
+ * 加上 @Entity 注解，表示这不仅是网络数据，也是数据库里的一张表，表名叫 "news_table"
  */
+@Entity(tableName = "news_table")
 data class NewsItem(
+    // @PrimaryKey: 主键，必须唯一。API返回的 id 是唯一的，正好拿来用
+    // autoGenerate = false 表示我们用服务器给的ID，不自己生成
+    @PrimaryKey(autoGenerate = false)
     val id: String,
+
     val title: String,
     val description: String,
     val source: String,
-    @SerializedName("picUrl") val coverImageUrl: String?, // 我们把 picUrl 重命名为更直观的 coverImageUrl
+    @SerializedName("picUrl") val coverImageUrl: String?,
     val url: String,
     @SerializedName("ctime") val time: String
 )

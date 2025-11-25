@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "1.9.0-1.0.13" // 注意：版本号可能需要根据你的Kotlin版本调整，先试这个
 }
 
 android {
@@ -63,4 +64,8 @@ dependencies {
     // 图片加载 Coil (专为 Compose 设计)
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // 支持协程
+    ksp("androidx.room:room-compiler:$room_version")      // 编译器
 }
