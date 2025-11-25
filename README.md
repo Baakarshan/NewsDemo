@@ -5,7 +5,9 @@
 
 ## 📸 项目演示 (Demo)
 
+<img src="https://raw.githubusercontent.com/Baakarshan/NewsDemo/refs/heads/main/Pictures/1.PNG"/>
 
+<img src="https://raw.githubusercontent.com/Baakarshan/NewsDemo/refs/heads/main/Pictures/2.png"/>
 
 ## 🛠 技术栈 (Tech Stack)
 
