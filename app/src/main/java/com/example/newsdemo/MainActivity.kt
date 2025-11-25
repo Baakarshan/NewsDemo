@@ -16,12 +16,27 @@ import com.example.newsdemo.ui.HomeScreen
 import com.example.newsdemo.viewmodel.HomeViewModel
 import com.example.newsdemo.viewmodel.NewsUiState
 import androidx.core.net.toUri
+import com.example.newsdemo.model.AppDatabase
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val viewModel: HomeViewModel = viewModel()
+
+            // 1. 获取数据库实例 (单例)
+            val database = AppDatabase.getDatabase(applicationContext)
+
+            // 2. 创建仓库实例
+            val repository = com.example.newsdemo.data.NewsRepository(
+                newsDao = database.newsDao(),
+                apiService = com.example.newsdemo.network.NetworkManager.api
+            )
+
+            // 3. 使用工厂创建 ViewModel (这是关键变化！)
+            val viewModel: HomeViewModel = viewModel(
+                factory = com.example.newsdemo.viewmodel.HomeViewModelFactory(repository)
+            )
+
             val uiState by viewModel.uiState.collectAsState()
 
             // 获取当前的 Context（用来启动浏览器）

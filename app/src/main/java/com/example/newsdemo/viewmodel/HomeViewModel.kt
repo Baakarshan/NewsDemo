@@ -7,46 +7,67 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModelProvider
+import com.example.newsdemo.data.NewsRepository
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(private val repository: NewsRepository) : ViewModel() {
 
+    // 以前这里默认是 Loading，现在我们可以给个 Success(empty) 或者 Loading 都可以
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
-    // 1. 新增：专门控制下拉刷新状态的流 (true=正在刷, false=刷完了)
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
+        // 1. 启动观察者：死死盯着数据库
+        viewModelScope.launch {
+            // collect 会一直挂起，监听数据库的变化
+            repository.allNewsStream.collect { cachedNews ->
+                if (cachedNews.isNotEmpty()) {
+                    // 只要数据库里有东西，立马显示出来！(实现了离线查看)
+                    _uiState.value = NewsUiState.Success(cachedNews)
+                } else {
+                    // 数据库是空的，可能是第一次安装，保持 Loading
+                    _uiState.value = NewsUiState.Loading
+                }
+            }
+        }
+
+        // 2. 只有第一次启动时，才自动触发一次网络请求
         getNews(isInit = true)
     }
 
-    // 修改点：增加 isInit 参数，区分是“第一次进App”还是“手动下拉”
     fun getNews(isInit: Boolean = false) {
         viewModelScope.launch {
-            if (isInit) {
-                _uiState.value = NewsUiState.Loading // 第一次进，显示全屏大圈圈
-            } else {
-                _isRefreshing.value = true // 下拉刷新，显示顶部小圈圈
-            }
+            if (!isInit) _isRefreshing.value = true
 
             try {
-                // 这里填你的 API KEY
-                val response = NetworkManager.api.getNews(apiKey = "bdc76391c06e53538de55d16c5ec085b", num = 10)
-
-                if (response.code == 200) {
-                    val newsList = response.result?.newsList ?: emptyList()
-                    _uiState.value = NewsUiState.Success(newsList)
-                } else {
-                    _uiState.value = NewsUiState.Error("API 错误: ${response.msg}")
-                }
+                // 指挥仓库去刷新数据
+                // 注意：这里不用处理 onSuccess，因为一旦 Repository 写入数据库，
+                // 上面的 collect 就会自动收到通知并更新 UI。这就是单一数据源的魅力！
+                repository.refreshNews("bdc76391c06e53538de55d16c5ec085b") // <--- 记得填Key
 
             } catch (e: Exception) {
-                _uiState.value = NewsUiState.Error("网络请求失败: ${e.message}")
+                // 只有网络报错时，我们才手动通知 UI 显示错误提示
+                // (而且只在数据库本来就没数据的时候显示错误页，有数据就弹个Toast其实更好，这里先简化)
+                if (_uiState.value is NewsUiState.Loading) {
+                    _uiState.value = NewsUiState.Error("加载失败: ${e.message}")
+                }
             } finally {
-                // 无论成功失败，最后都要把“正在刷新”的圈圈关掉
                 _isRefreshing.value = false
             }
         }
+    }
+}
+
+// 这是一个通用的样板代码，专门用来创建带参数的 ViewModel
+class HomeViewModelFactory(private val repository: NewsRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return HomeViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
